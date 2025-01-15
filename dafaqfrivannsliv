@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Voiceflow Chat Example (No Liquid)</title>
+  <style>
+    /* Use CSS variables for easy real-time customization */
+    :root {
+      --bot-background-color: #F3F3F3;
+      --bot-text-color: #000000;
+      --user-background-color: #3453ba;
+      --user-text-color: #ffffff;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Assistant", sans-serif;
+      display: flex;
+      height: 100vh;
+    }
+
+    /* === Sidebar === */
+    #sidebar {
+      width: 300px;
+      min-width: 260px;
+      background: #f9f9f9;
+      border-right: 1px solid #ccc;
+      padding: 20px;
+      box-sizing: border-box;
+      overflow-y: auto;
+    }
+    #sidebar h3 {
+      margin-top: 0;
+      margin-bottom: 1rem;
+    }
+    #sidebar label {
+      display: block;
+      margin-top: 1rem;
+      font-weight: bold;
+    }
+    #sidebar input[type="color"], 
+    #sidebar input[type="text"] {
+      margin-top: 0.5rem;
+      width: 100%;
+      box-sizing: border-box;
+      font-size: 14px;
+      padding: 5px;
+    }
+    #sidebar .notes {
+      font-size: 12px;
+      color: #666;
+      margin-top: 1rem;
+    }
+
+    /* === Chat Container === */
+    #chat-wrapper {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+
+    #chat-heading {
+      margin: 0 0 15px 0;
+      text-align: center;
+    }
+
+    #chat-container {
+      border: 1px solid #ddd;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+
+    /* === Chat Box === */
+    #chat-box {
+      padding: 8px;
+      max-height: 450px;
+      overflow-y: auto;
+    }
+
+    .vf-message {
+      font-size: 16px;
+      margin: 5px;
+      border-radius: 25px;
+      padding: 5px 15px;
+      clear: both;
+      max-width: 70%;
+      word-wrap: break-word;
+    }
+
+    .vf-message-agent {
+      background-color: var(--bot-background-color);
+      color: var(--bot-text-color);
+      float: left;
+    }
+
+    .vf-message-user {
+      background-color: var(--user-background-color);
+      color: var(--user-text-color);
+      float: right;
+    }
+
+    /* === Buttons and Indicators === */
+    .vf-message-button {
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+      box-sizing: border-box;
+      border-radius: 25px;
+      border: 1px solid var(--user-background-color);
+      background-color: var(--user-background-color);
+      color: var(--user-text-color);
+    }
+
+    #chat-all-button-container {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 8px;
+    }
+
+    #chat-box-typing-indicator-container {
+      display: none;
+      margin-right: 5px;
+    }
+
+    .chat-box-typing-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 24px;
+    }
+    .chat-box-typing-indicator span {
+      width: 6px;
+      height: 6px;
+      background-color: white;
+      border-radius: 50%;
+      display: inline-block;
+      margin: 0 2px;
+      animation: typing 1s infinite;
+    }
+    .chat-box-typing-indicator span:nth-child(1) { animation-delay: 0s; }
+    .chat-box-typing-indicator span:nth-child(2) { animation-delay: 0.2s; }
+    .chat-box-typing-indicator span:nth-child(3) { animation-delay: 0.4s; }
+
+    @keyframes typing {
+      0% { transform: translateY(0); }
+      50% { transform: translateY(-5px); }
+      100% { transform: translateY(5); }
+    }
+
+    /* === Add to Cart & Share Button === */
+    #chat-add-to-cart {
+      display: none;
+    }
+    #chat-copy-button {
+      display: none;
+    }
+
+    /* === Chat Input and Send Button === */
+    #chat-text-input-container {
+      display: flex;
+      align-items: center;
+      border-top: 1px solid #eee;
+      padding: 8px;
+    }
+
+    #chat-input {
+      flex: 1;
+      font-size: 15px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      margin-right: 8px;
+      border-radius: 25px;
+      outline: none;
+      box-sizing: border-box;
+    }
+
+    #chat-send-button {
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      box-sizing: border-box;
+      border-radius: 25px;
+      border: 1px solid var(--user-background-color);
+      background-color: var(--user-background-color);
+      color: var(--user-text-color);
+    }
+  </style>
+</head>
+
+<body>
+  <!-- === SIDEBAR FOR CUSTOMIZATION (Fake “Shopify style” side panel) === -->
+  <div id="sidebar">
+    <h3>Chatbot Customization</h3>
+
+    <!-- Colors -->
+    <label for="botBgColor">Bot Background Color</label>
+    <input type="color" id="botBgColor" value="#F3F3F3">
+
+    <label for="botTextColor">Bot Text Color</label>
+    <input type="color" id="botTextColor" value="#000000">
+
+    <label for="userBgColor">User Background Color</label>
+    <input type="color" id="userBgColor" value="#3453ba">
+
+    <label for="userTextColor">User Text Color</label>
+    <input type="color" id="userTextColor" value="#ffffff">
+
+    <!-- Labels/Text -->
+    <label for="headingText">Chat Heading</label>
+    <input type="text" id="headingText" value="✨ Learn more with AI ✨">
+
+    <label for="typeBoxPlaceholder">Type Box Placeholder</label>
+    <input type="text" id="typeBoxPlaceholder" value="Type your message here...">
+
+    <label for="sendButtonLabel">Send Button Label</label>
+    <input type="text" id="sendButtonLabel" value="Send">
+
+    <label for="productNameInput">Product Name</label>
+    <input type="text" id="productNameInput" value="Example Product">
+
+    <label for="pageSlugInput">Page Slug</label>
+    <input type="text" id="pageSlugInput" value="example-slug">
+
+    <p class="notes">
+      This panel simulates Shopify block settings. The actual chatbot is on the right. 
+    </p>
+  </div>
+
+  <!-- === MAIN CHAT WRAPPER === -->
+  <div id="chat-wrapper">
+    <h2 id="chat-heading">✨ Learn more with AI ✨</h2>
+
+    <!-- Chat container (no Liquid) -->
+    <div id="chat-container" data-product-name="Example Product" data-page-slug="example-slug">
+      <!-- Chat box (messages) -->
+      <div id="chat-box"></div>
+
+      <!-- Buttons & Typing Indicator -->
+      <div id="chat-all-button-container">
+        <div id="chat-box-typing-indicator-container" class="vf-message-button">
+          <div class="chat-box-typing-indicator">   
+            <span></span>
+            <span></span>
+            <span></span>
+          </div>
+        </div>
+        <div id="chat-button-box"></div>
+
+        <!-- Add To Cart -->
+        <div id="chat-add-to-cart">
+          <form method="post" action="/cart/add">
+            <input name="id" value="1234567890" type="hidden" />
+            <input class="vf-message-button" name="add" value="Order Now" type="submit" />
+          </form>
+        </div>
+
+        <!-- Copy/Share Link -->
+        <div id="chat-copy-link">
+          <button id="chat-copy-button" class="vf-message-button">Share</button>
+        </div>
+      </div>
+
+      <!-- Input + Send Button -->
+      <div id="chat-text-input-container">
+        <input type="text" id="chat-input" placeholder="Type your message here..."/>
+        <button id="chat-send-button">
+          <!-- Inline send.svg -->
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+               stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="22" y1="2" x2="11" y2="13"></line>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // === VOICEFLOW / CHATBOT CODE (No Liquid) ===
+    document.addEventListener('DOMContentLoaded', function () {
+      // Grab DOM elements
+      const chatContainer = document.getElementById('chat-container');
+      const chatBox = document.getElementById('chat-box');
+      const buttonDiv = document.getElementById('chat-button-box');
+      const typingIndicator = document.getElementById('chat-box-typing-indicator-container');
+      const chatInput = document.getElementById('chat-input');
+      const sendButton = document.getElementById('chat-send-button');
+      const addToCartButton = document.getElementById('chat-add-to-cart');
+      const shareButton = document.getElementById('chat-copy-button');
+      const chatHeading = document.getElementById('chat-heading');
+
+      // Sidebar inputs
+      const botBgColorInput = document.getElementById('botBgColor');
+      const botTextColorInput = document.getElementById('botTextColor');
+      const userBgColorInput = document.getElementById('userBgColor');
+      const userTextColorInput = document.getElementById('userTextColor');
+      const headingTextInput = document.getElementById('headingText');
+      const typeBoxPlaceholderInput = document.getElementById('typeBoxPlaceholder');
+      const sendButtonLabelInput = document.getElementById('sendButtonLabel');
+      const productNameInput = document.getElementById('productNameInput');
+      const pageSlugInput = document.getElementById('pageSlugInput');
+
+      // Voiceflow placeholders - replace with real credentials if needed
+      const VF_KEY = "VF.DM.677a96af6a634838e4a67c9a.QtZEGliVrVjfqkE2";
+      const VF_PROJECT_ID = "677a84e3085a2f58600e4ddf";
+      const VF_VERSION_ID = "677a84e3085a2f58600e4de0";
+
+      // Create a random user ID per session
+      const userID = `${Math.floor(Math.random() * 1000000000000000)}`;
+      console.log('User ID:', userID);
+
+      // ========================
+      // Voiceflow Interactions
+      // ========================
+      function delay(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+
+      async function vfInteract(user, userAction) {
+        clearInputState();
+        showTypingIndicator();
+
+        const interactionUrl = `https://general-runtime.voiceflow.com/state/user/${user}/interact`;
+        const payload = { action: userAction };
+
+        const response = await fetch(interactionUrl, {
+          headers: {
+            'Authorization': VF_KEY,
+            'accept': 'application/json',
+            'content-type': 'application/json',
+            'versionID': 'production',
+          },
+          method: 'POST',
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          hideTypingIndicator();
+          throw new Error(`Interact HTTP error! status: ${response.status}`);
+        }
+
+        if (response.ok && userAction.type !== 'launch') {
+          vfSaveTranscript();
+        }
+
+        const json = await response.json();
+        hideTypingIndicator();
+        return json;
+      }
+
+      function vfSendLaunch(payload = null) {
+        let interractPayload = { type: 'launch' };
+        if (payload) {
+          interractPayload.payload = payload;
+        }
+        vfInteract(userID, interractPayload)
+          .then((res) => {
+            console.log('Launch response:', res);
+            handleAgentResponse(res);
+          })
+          .catch(err => console.error(err));
+      }
+
+      function vfSendMessage(message) {
+        vfInteract(userID, { type: 'text', payload: message })
+          .then((res) => {
+            console.log(res);
+            handleAgentResponse(res);
+          })
+          .catch(err => console.error(err));
+      }
+
+      function vfSendAction(action) {
+        console.log('Sending action:', action);
+        vfInteract(userID, action)
+          .then((res) => {
+            console.log(res);
+            handleAgentResponse(res);
+          })
+          .catch(err => console.error(err));
+      }
+
+      async function vfSaveTranscript() {
+        const transcriptsUrl = 'https://api.voiceflow.com/v2/transcripts';
+        const transcriptsOptions = {
+          method: 'PUT',
+          headers: {
+            accept: 'application/json',
+            'content-type': 'application/json',
+            Authorization: VF_KEY
+          },
+          body: JSON.stringify({
+            projectID: VF_PROJECT_ID,
+            versionID: VF_VERSION_ID,
+            sessionID: `${userID}`
+          }),
+        };
+
+        console.log('Saving transcript...', transcriptsOptions);
+        const data = await fetch(transcriptsUrl, transcriptsOptions);
+        console.log('Transcripts response:', data);
+        if (!data.ok) {
+          throw new Error(`Transcripts HTTP error! status: ${data.status}`);
+        }
+        return data.json();
+      }
+
+      // ========================
+      // Chat UI Functions
+      // ========================
+      function addUserMessage(message) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'vf-message vf-message-user';
+        msgDiv.textContent = message;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function addAgentMessage(message) {
+        const msgDiv = document.createElement('div');
+        msgDiv.className = 'vf-message vf-message-agent';
+        // Basic markdown transform
+        message = message.replace(/\*\*(.*?)\*\*/g, '<b>$1</b>');
+        message = message.replace(/\*(.*?)\*/g, '<i>$1</i>');
+        message = message.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2" target="_blank">$1</a>');
+        message = message.replace(/(\n)+/g, '<br>');
+        msgDiv.innerHTML = message;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function addAgentNormalButton(buttons) {
+        for (const btn of buttons) {
+          const b = document.createElement('button');
+          b.className = 'vf-message-button';
+          b.textContent = btn.name;
+          b.addEventListener('click', function () {
+            addUserMessage(btn.name);
+            console.log('Button clicked:', btn);
+            if (btn.request.payload.actions) {
+              for (const action of btn.request.payload.actions) {
+                if (action.type === 'open_url') {
+                  console.log('Opening URL:', action.payload.url);
+                  window.open(action.payload.url, '_blank');
+                } else {
+                  console.log('Unknown button action type:', action.type);
+                }
+              }
+            }
+            vfSendAction(btn.request);
+          });
+          buttonDiv.appendChild(b);
+        }
+        chatBox.scrollTop = chatBox.scrollHeight;
+      }
+
+      function showAddToCart() { addToCartButton.style.display = 'block'; }
+      function hideAddToCart() { addToCartButton.style.display = 'none'; }
+      function showShareButton() { shareButton.style.display = 'block'; }
+      function hideShareButton() { shareButton.style.display = 'none'; }
+      function showTypingIndicator() { typingIndicator.style.display = 'block'; }
+      function hideTypingIndicator() { typingIndicator.style.display = 'none'; }
+
+      async function handleAgentResponse(response) {
+        for (const trace of response) {
+          if (trace.type === 'text') {
+            addAgentMessage(trace.payload.message);
+            await delay(200); // small delay for effect
+          } else if (trace.type === 'choice') {
+            addAgentNormalButton(trace.payload.buttons);
+          } else if (trace.type === 'add_to_cart' || 
+                    (trace.type === "trace" && trace.payload.name === "add_to_cart")) {
+            showAddToCart();
+          } else if (trace.type === 'share' || 
+                    (trace.type === "trace" && trace.payload.name === "share")) {
+            showShareButton();
+          } else {
+            console.log('Unknown trace type:', trace.type, trace);
+          }
+        }
+      }
+
+      function sendMessage() {
+        const message = chatInput.value.trim();
+        if (!message) return;
+        chatInput.value = '';
+        addUserMessage(message);
+        vfSendMessage(message);
+      }
+
+      function copyToClipboard() {
+        const currentUrl = window.location.href;
+        navigator.clipboard.writeText(currentUrl).then(function () {
+          addAgentMessage('Product URL copied to clipboard');
+        }, function (err) {
+          addAgentMessage(`Here's the product URL: ${currentUrl}`);
+        });
+      }
+
+      function clearInputState() {
+        buttonDiv.innerHTML = '';
+        hideAddToCart();
+        hideShareButton();
+      }
+
+      // ========================
+      // Event Listeners
+      // ========================
+      sendButton.addEventListener('click', sendMessage);
+      shareButton.addEventListener('click', copyToClipboard);
+      chatInput.addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+          sendMessage();
+        }
+      });
+
+      // ========================
+      // Sidebar -> Real-time Customization
+      // ========================
+      function updateColors() {
+        document.documentElement.style.setProperty('--bot-background-color', botBgColorInput.value);
+        document.documentElement.style.setProperty('--bot-text-color', botTextColorInput.value);
+        document.documentElement.style.setProperty('--user-background-color', userBgColorInput.value);
+        document.documentElement.style.setProperty('--user-text-color', userTextColorInput.value);
+      }
+
+      botBgColorInput.addEventListener('input', updateColors);
+      botTextColorInput.addEventListener('input', updateColors);
+      userBgColorInput.addEventListener('input', updateColors);
+      userTextColorInput.addEventListener('input', updateColors);
+
+      headingTextInput.addEventListener('input', () => {
+        chatHeading.textContent = headingTextInput.value;
+      });
+      typeBoxPlaceholderInput.addEventListener('input', () => {
+        chatInput.setAttribute('placeholder', typeBoxPlaceholderInput.value);
+      });
+      sendButtonLabelInput.addEventListener('input', () => {
+        // Replace entire button content or just the text?
+        // Here, we'll replace the textContent after the icon.
+        sendButton.lastElementChild.textContent = '';
+        sendButton.insertAdjacentText('beforeend', sendButtonLabelInput.value);
+      });
+
+      // If you want to re-launch the bot when product/page changes:
+      productNameInput.addEventListener('input', () => {
+        chatContainer.dataset.productName = productNameInput.value;
+      });
+      pageSlugInput.addEventListener('input', () => {
+        chatContainer.dataset.pageSlug = pageSlugInput.value;
+      });
+
+      // Initialize color from sidebar
+      updateColors();
+
+      // ========================
+      // Kick off a "launch" request
+      // ========================
+      // Use the dataset from chatContainer for now
+      const productName = chatContainer.dataset.productName;
+      const pageSlug = chatContainer.dataset.pageSlug;
+      vfSendLaunch({ productName, pageSlug });
+    });
+  </script>
+</body>
+</html>
