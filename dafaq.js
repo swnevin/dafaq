@@ -1,9 +1,9 @@
 document.addEventListener('DOMContentLoaded', function () {
     const userID = `${Math.floor(Math.random() * 1000000000000000)}`;    
     console.log('User ID:', userID);
-    const VF_KEY = "VF.DM.669a641e1091ccc3ed5c1b61.X0dWvrpTYfNg9hl4";
-    const VF_PROJECT_ID = "66968abb6d9824424357fbc8";
-    const VF_VERSION_ID = "66968abb6d9824424357fbc9";
+    const VF_KEY = "SET INN API NØKKEL HER - Den som liksom er der ja";
+    const VF_PROJECT_ID = "SET INN PROSJEKT ID HER - Inn i settings i vf også bla helt ned";
+    const VF_VERSION_ID = "SET INN VERSJONS ID HER - Inn i settings i vf også bla helt ned";
 
     function delay(ms) {
         return new Promise((resolve) => setTimeout(resolve, ms));
